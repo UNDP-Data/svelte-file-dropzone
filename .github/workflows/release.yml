@@ -1,0 +1,45 @@
+name: Changesets
+on:
+  push:
+    branches:
+      - main
+
+env:
+  CI: true
+
+permissions: {}
+jobs:
+  release:
+    # prevents this action from running on forks
+    if: github.repository == 'undp-data/svelte-file-dropzone'
+    permissions:
+      contents: write # to create release (changesets/action)
+      pull-requests: write # to create pull request (changesets/action)
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: build package
+        run: npm run package
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: npm run changeset:release
+          version: npm run changeset:version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
